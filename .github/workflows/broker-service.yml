@@ -1,0 +1,30 @@
+name: Broker Service
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "main" ]
+    paths-ignore:
+        - "assets/**"
+        - "auth-service/**"
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: '1.20'
+
+    - name: Build
+      working-directory: ./broker-service
+      run: go build -v ./...
+
+    - name: Test
+      working-directory: ./broker-service
+      run: go test -v ./...
