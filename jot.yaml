@@ -5,7 +5,9 @@ project:
 services:
     - name: broker
       port: 8080
-      endpoints: []
+      endpoints:
+        - handle
     - name: auth
       port: 8081
       endpoints: []
+      
