@@ -1,7 +1,7 @@
 package api
 
 import (
-	"broker-service/api/handler/handle"
+	"broker-service/api/handler/auth"
 
 	"github.com/AdamShannag/toolkit"
 	"github.com/go-chi/chi/middleware"
@@ -29,7 +29,8 @@ func NewMux() *chi.Mux {
 	mux.Use(middleware.RealIP)
 	mux.Use(middleware.Recoverer)
 
-	mux.Mount("/api", handle.NewHandle(kit))
+	mux.Mount("/api/auth", auth.NewAuth(kit))
+	mux.Mount("/api", SecureRoutes(kit))
 
 	return mux
 }
