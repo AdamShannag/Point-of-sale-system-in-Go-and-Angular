@@ -2,6 +2,7 @@ package main
 
 import (
 	"broker-service/api"
+	"broker-service/internal/shutdown"
 	"context"
 	"log"
 	"net/http"
@@ -17,15 +18,15 @@ func main() {
 			Addr:    ":" + webPort,
 			Handler: mux,
 		}
-		shutdown = make(chan struct{})
+		shutdownChan = make(chan struct{})
 	)
 
-	go gracefulShutdown(ctx, &server, shutdown)
+	go shutdown.GracefulShutdown(ctx, &server, shutdownChan)
 
 	log.Println("server starting: http://localhost" + server.Addr)
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
 		log.Fatal("server error", err)
 	}
 
-	<-shutdown
+	<-shutdownChan
 }

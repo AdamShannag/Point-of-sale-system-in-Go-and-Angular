@@ -1,4 +1,4 @@
-package main
+package shutdown
 
 import (
 	"context"
@@ -11,7 +11,11 @@ import (
 
 var shutdowns []func() error
 
-func gracefulShutdown(ctx context.Context, server *http.Server, shutdown chan struct{}) {
+func AddToShutdowns(shutdownFunc func() error) {
+	shutdowns = append(shutdowns, shutdownFunc)
+}
+
+func GracefulShutdown(ctx context.Context, server *http.Server, shutdown chan struct{}) {
 	var (
 		sigint = make(chan os.Signal, 1)
 	)
