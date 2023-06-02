@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-const webPort = "8090"
+const webPort = "80"
 
 func main() {
 	var (

@@ -19,3 +19,5 @@
 
 # Go workspace file
 go.work
+broker-service/bin/brokerApp
+auth-service/bin/authApp
