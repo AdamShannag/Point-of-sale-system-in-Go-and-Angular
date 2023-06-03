@@ -12,6 +12,8 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+    environment:
+      AUTH_GRPC_SERVER: "auth-service:50000"
 
   auth-service:
     build:

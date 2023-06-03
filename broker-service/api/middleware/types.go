@@ -1,11 +1,16 @@
 package middleware
 
-import "broker-service/internal/grpc/client"
+import (
+	"broker-service/internal/grpc/proto/auth"
+
+	"github.com/AdamShannag/toolkit"
+)
 
 type Middleware struct {
-	client *client.GrpcClients
+	kit        *toolkit.Tools
+	authClient auth.AuthServiceClient
 }
 
-func NewMiddleware(authClient *client.GrpcClients) *Middleware {
-	return &Middleware{client: authClient}
+func NewMiddleware(kit *toolkit.Tools, authClient auth.AuthServiceClient) *Middleware {
+	return &Middleware{kit, authClient}
 }

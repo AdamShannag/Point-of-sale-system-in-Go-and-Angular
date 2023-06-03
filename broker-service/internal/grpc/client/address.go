@@ -1,6 +1,12 @@
 package client
 
+import "os"
+
 const (
-	AUTH_ADDRESS = "auth-service:50000"
+	auth = "AUTH_GRPC_SERVER"
 	// Add other grpc addresses
 )
+
+func getAddress(addr string) string {
+	return os.Getenv(addr)
+}

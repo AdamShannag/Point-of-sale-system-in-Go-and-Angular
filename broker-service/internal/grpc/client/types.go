@@ -1,11 +1,16 @@
 package client
 
+import (
+	pb "broker-service/internal/grpc/proto/auth"
+)
+
 type GrpcClients struct {
-	// AuthClient *AuthServiceClient
+	AuthClient *pb.AuthServiceClient
 }
 
 func New() *GrpcClients {
-	// authConn := pb.NewAuthServiceClient(newConnection(AUTH_ADDRESS))
-
-	return &GrpcClients{}
+	authClient := pb.NewAuthServiceClient(newConnection(getAddress(auth)))
+	return &GrpcClients{
+		AuthClient: &authClient,
+	}
 }

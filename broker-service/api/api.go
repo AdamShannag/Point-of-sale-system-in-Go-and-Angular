@@ -16,7 +16,7 @@ func NewMux() *chi.Mux {
 		mux     = chi.NewMux()
 		kit     = &toolkit.Tools{}
 		clients = client.New()
-		mid     = middleware.NewMiddleware(clients)
+		mid     = middleware.NewMiddleware(kit, *clients.AuthClient)
 	)
 
 	mux.Use(cors.Handler(cors.Options{
