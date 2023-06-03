@@ -1,0 +1,10 @@
+syntax = "proto3";
+import "rpc_user.proto";
+
+package pd;
+option go_package = "auth-service/pd";
+
+service AdminService {
+  rpc CreateUser(UserRequest) returns (UserResponse);
+  rpc UpdateUser(UserRequest) returns (UserResponse);
+}

@@ -5,4 +5,4 @@ gofmt:
 	@go fmt ./...
 
 initmod:
-	@go mod init broker-service
+	@go mod init auth-service
