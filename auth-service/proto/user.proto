@@ -1,9 +1,10 @@
 syntax = "proto3";
 
-package pd;
-
 import "google/protobuf/timestamp.proto";
-option go_package = "auth-service/pd";
+import "payload.proto";
+
+package auth;
+option go_package = "auth-service/internal/grpc/proto/auth";
 
 message User {
   string uuid = 1;
@@ -15,4 +16,18 @@ message User {
   string addedBy = 7;
   google.protobuf.Timestamp createdAt = 8;
   google.protobuf.Timestamp modifiedAt = 9;
+}
+
+message UserRequest {
+  string username = 1;
+  string email = 2;
+  string phone = 3;
+  string address = 4;
+  string password = 5;
+  string userType = 6;
+  Payload payload = 7;
+}
+
+message UserResponse {
+  User user = 1;
 }

@@ -1,16 +1,17 @@
 syntax = "proto3";
+import "login.proto";
+import "user.proto";
+import "verify_token.proto";
+import "change_password.proto";
 
-package pd;
-option go_package = "auth-service/pd";
 
-message VerifyTokenRequest {
-  string token = 1;
-}
-
-message VerifyTokenResponse {
-  bool verified = 1;
-}
+package auth;
+option go_package = "auth-service/internal/grpc/proto/auth";
 
 service AuthService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc CreateUser(UserRequest) returns (UserResponse);
+  rpc UpdateUser(UserRequest) returns (UserResponse);
   rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
+  rpc ChangePassword(ChangePasswordRequest)  returns (ChangePasswordRequest);
 }

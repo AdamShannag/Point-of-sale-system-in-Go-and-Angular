@@ -1,0 +1,14 @@
+syntax = "proto3";
+import "payload.proto";
+
+package auth;
+option go_package = "auth-service/internal/grpc/proto/auth";
+
+message VerifyTokenRequest {
+  string token = 1;
+}
+
+message VerifyTokenResponse {
+  bool verified = 1;
+  Payload payload = 2;
+}

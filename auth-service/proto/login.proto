@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package pd;
 
 import "user.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "auth-service/pd";
+package auth;
+option go_package = "auth-service/internal/grpc/proto/auth";
 
 message LoginRequest {
   string username = 1;
