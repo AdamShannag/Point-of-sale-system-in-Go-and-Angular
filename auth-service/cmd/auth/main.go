@@ -1,31 +1,48 @@
 package main
 
 import (
-	"broker-service/api"
-	"context"
+	db "auth-service/db/sqlc"
+	"auth-service/internal/config"
+	pb "auth-service/internal/grpc/proto/auth"
+	"auth-service/internal/grpc/server"
+	"database/sql"
+	"google.golang.org/grpc"
 	"log"
-	"net/http"
+	"net"
 )
 
-const webPort = "8091"
+const webPort = ":8091"
 
 func main() {
-	var (
-		ctx    = context.Background()
-		mux    = api.NewMux()
-		server = http.Server{
-			Addr:    ":" + webPort,
-			Handler: mux,
-		}
-		shutdown = make(chan struct{})
-	)
 
-	go gracefulShutdown(ctx, &server, shutdown)
+	addr := "localhost:50001"
+	lis, err := net.Listen("tcp", addr)
 
-	log.Println("server starting: http://localhost" + server.Addr)
-	if err := server.ListenAndServe(); err != http.ErrServerClosed {
-		log.Fatal("server error", err)
+	if err != nil {
+		log.Fatalf("Failed to listen: %v\n", err)
 	}
 
-	<-shutdown
+	log.Printf("Listening at %s\n", addr)
+
+	s := grpc.NewServer()
+	conf, err := config.LoadConfig(".")
+	if err != nil {
+		log.Fatal("cannot load config", err)
+	}
+
+	conn, err := sql.Open(conf.DBDriver, conf.DBSource)
+	if err != nil {
+		log.Fatal("cannot connect to db", err)
+	}
+
+	newServer, _ := server.NewServer(conf, db.NewStore(conn))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	pb.RegisterAuthServiceServer(s, newServer)
+
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("Failed to serve: %v\n", err)
+	}
 }

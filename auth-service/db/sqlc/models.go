@@ -5,40 +5,28 @@
 package db
 
 import (
+	"database/sql"
 	"time"
 )
 
-type Session struct {
-	Uuid         string    `json:"uuid"`
-	UserUuid     string    `json:"user_uuid"`
-	RefreshToken string    `json:"refresh_token"`
-	UserAgent    string    `json:"user_agent"`
-	ClientIp     string    `json:"client_ip"`
-	IsBlocked    bool      `json:"is_blocked"`
-	ExpiresAt    time.Time `json:"expires_at"`
-	CreatedAt    time.Time `json:"created_at"`
+type KeyPair struct {
+	Uuid       string    `json:"uuid"`
+	PrivetKey  []byte    `json:"privet_key"`
+	PublicKey  []byte    `json:"public_key"`
+	ExpiredAt  time.Time `json:"expired_at"`
+	CreatedAt  time.Time `json:"created_at"`
+	ModifiedAt time.Time `json:"modified_at"`
 }
 
 type User struct {
-	Uuid            string    `json:"uuid"`
-	Username        string    `json:"username"`
-	Email           string    `json:"email"`
-	Phone           string    `json:"phone"`
-	HashedPassword  string    `json:"hashed_password"`
-	Address         string    `json:"address"`
-	UserType        string    `json:"user_type"`
-	AddedBy         string    `json:"added_by"`
-	CreatedAt       time.Time `json:"created_at"`
-	ModifiedAt      time.Time `json:"modified_at"`
-	IsEmailVerified bool      `json:"is_email_verified"`
-}
-
-type VerifyEmail struct {
-	Uuid       string    `json:"uuid"`
-	UserUuid   string    `json:"user_uuid"`
-	Email      string    `json:"email"`
-	SecretCode string    `json:"secret_code"`
-	IsUsed     bool      `json:"is_used"`
-	CreatedAt  time.Time `json:"created_at"`
-	ExpiredAt  time.Time `json:"expired_at"`
+	Uuid           string         `json:"uuid"`
+	Username       string         `json:"username"`
+	Email          string         `json:"email"`
+	Phone          string         `json:"phone"`
+	HashedPassword string         `json:"hashed_password"`
+	Address        string         `json:"address"`
+	UserType       string         `json:"user_type"`
+	AddedBy        sql.NullString `json:"added_by"`
+	CreatedAt      time.Time      `json:"created_at"`
+	ModifiedAt     time.Time      `json:"modified_at"`
 }

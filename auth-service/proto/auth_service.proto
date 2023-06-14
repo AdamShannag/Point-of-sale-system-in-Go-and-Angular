@@ -13,5 +13,5 @@ service AuthService {
   rpc CreateUser(UserRequest) returns (UserResponse);
   rpc UpdateUser(UserRequest) returns (UserResponse);
   rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenResponse);
-  rpc ChangePassword(ChangePasswordRequest)  returns (ChangePasswordRequest);
+  rpc ChangePassword(ChangePasswordRequest)  returns (ChangePasswordResponse);
 }

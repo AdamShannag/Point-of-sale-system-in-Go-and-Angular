@@ -9,6 +9,5 @@ message VerifyTokenRequest {
 }
 
 message VerifyTokenResponse {
-  bool verified = 1;
-  Payload payload = 2;
+  Payload payload = 1;
 }

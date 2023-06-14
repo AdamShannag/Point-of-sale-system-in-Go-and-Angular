@@ -34,7 +34,7 @@ type AuthServiceClient interface {
 	CreateUser(ctx context.Context, in *UserRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	UpdateUser(ctx context.Context, in *UserRequest, opts ...grpc.CallOption) (*UserResponse, error)
 	VerifyToken(ctx context.Context, in *VerifyTokenRequest, opts ...grpc.CallOption) (*VerifyTokenResponse, error)
-	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordRequest, error)
+	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error)
 }
 
 type authServiceClient struct {
@@ -81,8 +81,8 @@ func (c *authServiceClient) VerifyToken(ctx context.Context, in *VerifyTokenRequ
 	return out, nil
 }
 
-func (c *authServiceClient) ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordRequest, error) {
-	out := new(ChangePasswordRequest)
+func (c *authServiceClient) ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error) {
+	out := new(ChangePasswordResponse)
 	err := c.cc.Invoke(ctx, AuthService_ChangePassword_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ type AuthServiceServer interface {
 	CreateUser(context.Context, *UserRequest) (*UserResponse, error)
 	UpdateUser(context.Context, *UserRequest) (*UserResponse, error)
 	VerifyToken(context.Context, *VerifyTokenRequest) (*VerifyTokenResponse, error)
-	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordRequest, error)
+	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -118,7 +118,7 @@ func (UnimplementedAuthServiceServer) UpdateUser(context.Context, *UserRequest) 
 func (UnimplementedAuthServiceServer) VerifyToken(context.Context, *VerifyTokenRequest) (*VerifyTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method VerifyToken not implemented")
 }
-func (UnimplementedAuthServiceServer) ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordRequest, error) {
+func (UnimplementedAuthServiceServer) ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ChangePassword not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}

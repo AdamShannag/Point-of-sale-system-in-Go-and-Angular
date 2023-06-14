@@ -8,6 +8,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"time"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -18,19 +19,24 @@ INSERT INTO users (uuid,
                    hashed_password,
                    address,
                    user_type,
-                   added_by)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING uuid, username, email, phone, hashed_password, address, user_type, added_by, created_at, modified_at, is_email_verified
+                   added_by,
+                   created_at,
+                   modified_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING uuid, username, email, phone, hashed_password, address, user_type, added_by, created_at, modified_at
 `
 
 type CreateUserParams struct {
-	Uuid           string `json:"uuid"`
-	Username       string `json:"username"`
-	Email          string `json:"email"`
-	Phone          string `json:"phone"`
-	HashedPassword string `json:"hashed_password"`
-	Address        string `json:"address"`
-	UserType       string `json:"user_type"`
-	AddedBy        string `json:"added_by"`
+	Uuid           string         `json:"uuid"`
+	Username       string         `json:"username"`
+	Email          string         `json:"email"`
+	Phone          string         `json:"phone"`
+	HashedPassword string         `json:"hashed_password"`
+	Address        string         `json:"address"`
+	UserType       string         `json:"user_type"`
+	AddedBy        sql.NullString `json:"added_by"`
+	CreatedAt      time.Time      `json:"created_at"`
+	ModifiedAt     time.Time      `json:"modified_at"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -43,6 +49,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Address,
 		arg.UserType,
 		arg.AddedBy,
+		arg.CreatedAt,
+		arg.ModifiedAt,
 	)
 	var i User
 	err := row.Scan(
@@ -56,15 +64,18 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.AddedBy,
 		&i.CreatedAt,
 		&i.ModifiedAt,
-		&i.IsEmailVerified,
 	)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT uuid, username, email, phone, hashed_password, address, user_type, added_by, created_at, modified_at, is_email_verified
+SELECT uuid, username, email, phone, hashed_password, address, user_type, added_by, created_at, modified_at
 FROM users
-WHERE uuid = $1 LIMIT 1
+WHERE uuid = $1
+   or username = $1
+   or email = $1
+   or phone = $1
+LIMIT 1
 `
 
 func (q *Queries) GetUser(ctx context.Context, uuid string) (User, error) {
@@ -81,7 +92,6 @@ func (q *Queries) GetUser(ctx context.Context, uuid string) (User, error) {
 		&i.AddedBy,
 		&i.CreatedAt,
 		&i.ModifiedAt,
-		&i.IsEmailVerified,
 	)
 	return i, err
 }
@@ -99,6 +109,27 @@ func (q *Queries) GetUsername(ctx context.Context, uuid string) (string, error) 
 	return username, err
 }
 
+const updatePassword = `-- name: UpdatePassword :execrows
+UPDATE users
+SET hashed_password = $1,
+    modified_at     = $2::timestamptz
+WHERE username = $3
+`
+
+type UpdatePasswordParams struct {
+	HashedPassword string    `json:"hashed_password"`
+	ModifiedAt     time.Time `json:"modified_at"`
+	Username       string    `json:"username"`
+}
+
+func (q *Queries) UpdatePassword(ctx context.Context, arg UpdatePasswordParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, updatePassword, arg.HashedPassword, arg.ModifiedAt, arg.Username)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
+}
+
 const updateUser = `-- name: UpdateUser :one
 UPDATE users
 SET hashed_password   = COALESCE($1, hashed_password),
@@ -107,21 +138,21 @@ SET hashed_password   = COALESCE($1, hashed_password),
     phone             = COALESCE($4, phone),
     address           = COALESCE($5, address),
     user_type         = COALESCE($6, user_type),
-    modified_at       = COALESCE($7, modified_at),
-    is_email_verified = COALESCE($8, is_email_verified)
-WHERE uuid = $9 RETURNING uuid, username, email, phone, hashed_password, address, user_type, added_by, created_at, modified_at, is_email_verified
+    modified_at     = $7::timestamptz,
+    created_at      = created_at
+WHERE uuid = $8
+RETURNING uuid, username, email, phone, hashed_password, address, user_type, added_by, created_at, modified_at
 `
 
 type UpdateUserParams struct {
-	HashedPassword  sql.NullString `json:"hashed_password"`
-	Username        sql.NullString `json:"username"`
-	Email           sql.NullString `json:"email"`
-	Phone           sql.NullString `json:"phone"`
-	Address         sql.NullString `json:"address"`
-	UserType        sql.NullString `json:"user_type"`
-	ModifiedAt      sql.NullTime   `json:"modified_at"`
-	IsEmailVerified sql.NullBool   `json:"is_email_verified"`
-	Uuid            string         `json:"uuid"`
+	HashedPassword sql.NullString `json:"hashed_password"`
+	Username       sql.NullString `json:"username"`
+	Email          sql.NullString `json:"email"`
+	Phone          sql.NullString `json:"phone"`
+	Address        sql.NullString `json:"address"`
+	UserType       sql.NullString `json:"user_type"`
+	ModifiedAt     time.Time      `json:"modified_at"`
+	Uuid           string         `json:"uuid"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
@@ -133,7 +164,6 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.Address,
 		arg.UserType,
 		arg.ModifiedAt,
-		arg.IsEmailVerified,
 		arg.Uuid,
 	)
 	var i User
@@ -148,7 +178,6 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.AddedBy,
 		&i.CreatedAt,
 		&i.ModifiedAt,
-		&i.IsEmailVerified,
 	)
 	return i, err
 }

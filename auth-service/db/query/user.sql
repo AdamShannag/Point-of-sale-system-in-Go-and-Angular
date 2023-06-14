@@ -6,13 +6,20 @@ INSERT INTO users (uuid,
                    hashed_password,
                    address,
                    user_type,
-                   added_by)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
+                   added_by,
+                   created_at,
+                   modified_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING *;
 
 -- name: GetUser :one
 SELECT *
 FROM users
-WHERE uuid = $1 LIMIT 1;
+WHERE uuid = $1
+   or username = $1
+   or email = $1
+   or phone = $1
+LIMIT 1;
 
 -- name: UpdateUser :one
 UPDATE users
@@ -22,9 +29,16 @@ SET hashed_password   = COALESCE(sqlc.narg(hashed_password), hashed_password),
     phone             = COALESCE(sqlc.narg(phone), phone),
     address           = COALESCE(sqlc.narg(address), address),
     user_type         = COALESCE(sqlc.narg(user_type), user_type),
-    modified_at       = COALESCE(sqlc.narg(modified_at), modified_at),
-    is_email_verified = COALESCE(sqlc.narg(is_email_verified), is_email_verified)
-WHERE uuid = sqlc.arg(uuid) RETURNING *;
+    modified_at     = sqlc.arg(modified_at)::timestamptz,
+    created_at      = created_at
+WHERE uuid = sqlc.arg(uuid)
+RETURNING *;
+
+-- name: UpdatePassword :execrows
+UPDATE users
+SET hashed_password = sqlc.arg(hashed_password),
+    modified_at     = sqlc.arg(modified_at)::timestamptz
+WHERE username = sqlc.arg(username);
 
 -- name: GetUsername :one
 SELECT username

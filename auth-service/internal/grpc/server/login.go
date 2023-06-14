@@ -1,63 +1,68 @@
 package server
 
 import (
+	db "auth-service/db/sqlc"
 	proto "auth-service/internal/grpc/proto/auth"
-	"auth-service/internal/util"
+	"auth-service/internal/mapper"
 	val "auth-service/internal/validator"
 	"context"
-	"database/sql"
+	"github.com/mohammadyaseen2/TokenUtils/model"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"time"
 )
 
-func (server *Server) LoginUser(ctx context.Context, req *proto.LoginRequest) (*proto.LoginResponse, error) {
+func (server *Server) Login(ctx context.Context, req *proto.LoginRequest) (*proto.LoginResponse, error) {
 
 	if violations := validateLoginUserRequest(req); violations != nil {
 		return nil, invalidArgumentError(violations)
 	}
 
-	user, err := server.store.GetUser(ctx, req.GetUsername())
+	user, err := server.getUser(ctx, req.GetUsername())
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, status.Errorf(codes.NotFound, "user not found")
-		}
-		return nil, status.Errorf(codes.Internal, "failed to find user")
+		return nil, err
 	}
 
-	err = util.CheckPassword(req.Password, user.HashedPassword)
-	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "incorrect password")
+	if err := server.checkPassword(req.GetPassword(), user); err != nil {
+		return nil, err
 	}
 
-	accessToken, accessPayload, err := server.tokenMaker.CreateToken(
-		user.Username,
-		server.config.AccessTokenDuration,
-	)
+	payload := server.createPayload(user, server.config.AccessTokenDuration)
+	accessToken, err := server.token.CreateToken(payload)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create access token")
 	}
 
-	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(
-		user.Username,
-		server.config.RefreshTokenDuration,
-	)
+	payload = server.createPayload(user, server.config.RefreshTokenDuration)
+	refreshToken, err := server.token.CreateToken(payload)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to create refresh token")
 	}
 
-	convertedUser := convertUser(user)
-	convertedUser.AddedBy = getUserWhoAdded(ctx, server, user.AddedBy)
+	convertedUser := mapper.UserToResource(user)
+	if user.AddedBy.Valid {
+		convertedUser.AddedBy = getUserWhoAdded(ctx, server, user.AddedBy.String)
+	}
 
 	rsp := &proto.LoginResponse{
-		User:                  convertedUser,
-		AccessToken:           accessToken,
-		RefreshToken:          refreshToken,
-		AccessTokenExpiresAt:  timestamppb.New(accessPayload.ExpiredAt),
-		RefreshTokenExpiresAt: timestamppb.New(refreshPayload.ExpiredAt),
+		User:         convertedUser,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
 	}
 	return rsp, nil
+}
+
+func (server *Server) createPayload(user db.User, duration time.Duration) *model.Payload {
+	payload, _ := model.NewPayload(
+		user.Username,
+		[]string{user.UserType},
+		duration,
+		model.Extra{"uuid": user.Uuid},
+	)
+	payload.IssuedAt = server.time.Now().Unix()
+	payload.ExpiresAt = server.time.Now().Add(duration).Unix()
+	return payload
 }
 
 func getUserWhoAdded(ctx context.Context, server *Server, userUuid string) string {
@@ -66,9 +71,6 @@ func getUserWhoAdded(ctx context.Context, server *Server, userUuid string) strin
 }
 
 func validateLoginUserRequest(req *proto.LoginRequest) (violations []*errdetails.BadRequest_FieldViolation) {
-	if err := val.ValidateUsername(req.GetUsername()); err != nil {
-		violations = append(violations, fieldViolation("username", err))
-	}
 
 	if err := val.ValidatePassword(req.GetPassword()); err != nil {
 		violations = append(violations, fieldViolation("password", err))

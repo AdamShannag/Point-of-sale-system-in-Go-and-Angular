@@ -3,9 +3,12 @@ package server
 import (
 	db "auth-service/db/sqlc"
 	proto "auth-service/internal/grpc/proto/auth"
-	"auth-service/internal/util"
+	"auth-service/internal/mapper"
+	"auth-service/internal/security"
 	val "auth-service/internal/validator"
 	"context"
+	"database/sql"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -19,10 +22,12 @@ func (server *Server) CreateUser(ctx context.Context, req *proto.UserRequest) (*
 		return nil, invalidArgumentError(violations)
 	}
 
-	hashedPassword, err := util.HashPassword(req.GetPassword())
+	hashedPassword, err := security.HashPassword(req.GetPassword())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to hash password: %s", err)
 	}
+	fmt.Println("req.Payload.Uuid: ", req.Payload.Uuid)
+
 	arg := db.CreateUserTxParams{
 		CreateUserParams: db.CreateUserParams{
 			Uuid:           uuid.New().String(),
@@ -32,7 +37,12 @@ func (server *Server) CreateUser(ctx context.Context, req *proto.UserRequest) (*
 			UserType:       req.GetUserType(),
 			HashedPassword: hashedPassword,
 			Address:        req.GetAddress(),
-			AddedBy:        getUserWhoAdded(ctx, server, req.Payload.Uuid),
+			AddedBy: sql.NullString{
+				Valid:  req.Payload.Uuid != "",
+				String: req.Payload.GetUuid(),
+			},
+			CreatedAt:  server.time.Now(),
+			ModifiedAt: server.time.Now(),
 		},
 	}
 
@@ -48,7 +58,7 @@ func (server *Server) CreateUser(ctx context.Context, req *proto.UserRequest) (*
 	}
 
 	rsp := &proto.UserResponse{
-		User: convertUser(txResult.User),
+		User: mapper.UserToResource(txResult.User),
 	}
 	return rsp, nil
 }
